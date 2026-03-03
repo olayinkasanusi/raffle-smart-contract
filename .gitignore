@@ -2,8 +2,8 @@
 cache/
 out/
 
-# lib files
-lib/
+# # lib files
+# lib/
 
 # Ignores development broadcast logs
 !/broadcast

@@ -41,9 +41,19 @@ contract Raffle is VRFConsumerBaseV2Plus {
      * ERRORS
      */
     error Raffle__NotEnoughETH();
+    error Raffle__TransferFailed();
+    error Raffle__RaffleNotOpen();
 
     /**
-     * CONSTANTS
+     * TYPE DECLARATIONS
+     */
+    enum RaffleState {
+        OPEN,
+        CALCULATING
+    }
+
+    /**
+     * STATE VARIABLES
      */
     uint256 private immutable i_entranceFee;
     uint256 private immutable i_interval;
@@ -54,11 +64,15 @@ contract Raffle is VRFConsumerBaseV2Plus {
     uint32 private immutable i_callbackGasLimit;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
+    uint256 private s_playersLength = s_players.length;
+    address private s_recentWinner;
+    RaffleState private s_raffleState;
 
     /**
      * EVENTS
      */
     event RaffleEntered(address indexed player);
+    event WinnerPicked(address indexed winner);
 
     constructor(
         uint256 entranceFee,
@@ -74,10 +88,13 @@ contract Raffle is VRFConsumerBaseV2Plus {
         i_callbackGasLimit = callbackGasLimit;
         i_keyHash = gasLane;
         s_lastTimeStamp = block.timestamp;
+        s_raffleState = RaffleState.OPEN;
     }
 
     function enterRaffle() external payable {
         if (msg.value >= i_entranceFee) revert Raffle__NotEnoughETH();
+
+        if (s_raffleState != RaffleState.OPEN) revert Raffle__RaffleNotOpen();
 
         s_players.push(payable(msg.sender));
 
@@ -88,6 +105,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
         if (block.timestamp - s_lastTimeStamp < i_interval) revert();
 
         //Get our Random Number v2.5
+
+        s_raffleState = RaffleState.CALCULATING;
+
         VRFV2PlusClient.RandomWordsRequest memory request = VRFV2PlusClient.RandomWordsRequest({
             keyHash: i_keyHash,
             subId: i_subscriptionId,
@@ -103,7 +123,20 @@ contract Raffle is VRFConsumerBaseV2Plus {
         uint256 requestId = s_vrfCoordinator.requestRandomWords(request);
     }
 
-    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {}
+    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
+        uint256 indexOfWinner = randomWords[0] % s_playersLength;
+        address payable recentWinner = s_players[indexOfWinner];
+        s_recentWinner = recentWinner;
+
+        // Reset the lottery
+        s_players = new address payable[](0);
+        s_lastTimeStamp = block.timestamp;
+        s_raffleState = RaffleState.OPEN;
+
+        (bool success,) = recentWinner.call{value: address(this).balance}("");
+        if (!success) revert Raffle__TransferFailed();
+        emit WinnerPicked(recentWinner);
+    }
 
     /**
      * Getter Functions
