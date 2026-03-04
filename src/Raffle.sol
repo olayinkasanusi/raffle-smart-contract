@@ -101,7 +101,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         emit RaffleEntered(msg.sender);
     }
 
-    function pickWinner() external view {
+    function pickWinner() external {
         if (block.timestamp - s_lastTimeStamp < i_interval) revert();
 
         //Get our Random Number v2.5
