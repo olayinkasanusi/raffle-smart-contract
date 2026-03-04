@@ -46,6 +46,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__NotEnoughETH();
     error Raffle__TransferFailed();
     error Raffle__RaffleNotOpen();
+    error Raffle__UpKeepIsFalse(uint256 balance, uint256 playersLength, uint256 raffleState);
 
     /**
      * TYPE DECLARATIONS
@@ -142,7 +143,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
     {
         // Check if enough time has passed, the lottery is open, has balance, and has players
         (bool upkeepNeeded,) = this.checkUpKeep("");
-        if (!upkeepNeeded) revert Raffle__RaffleNotOpen();
+        if (!upkeepNeeded) {
+            revert Raffle__UpKeepIsFalse(address(this).balance, s_playersLength, uint256(s_raffleState));
+        }
 
         //Get our Random Number v2.5
 
@@ -160,10 +163,17 @@ contract Raffle is VRFConsumerBaseV2Plus {
             )
         });
 
-        uint256 requestId = s_vrfCoordinator.requestRandomWords(request);
+        s_vrfCoordinator.requestRandomWords(request);
     }
 
-    function fulfillRandomWords(uint256 requestId, uint256[] calldata randomWords) internal override {
+    function fulfillRandomWords(
+        uint256,
+        /*requestId*/
+        uint256[] calldata randomWords
+    )
+        internal
+        override
+    {
         uint256 indexOfWinner = randomWords[0] % s_playersLength;
         address payable recentWinner = s_players[indexOfWinner];
         s_recentWinner = recentWinner;
