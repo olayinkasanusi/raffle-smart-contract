@@ -68,7 +68,6 @@ contract Raffle is VRFConsumerBaseV2Plus {
     uint32 private immutable i_callbackGasLimit;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
-    uint256 private s_playersLength = s_players.length;
     address private s_recentWinner;
     RaffleState private s_raffleState;
 
@@ -130,7 +129,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         bool timeHasPassed = (block.timestamp - s_lastTimeStamp) > i_interval;
         bool isOpen = s_raffleState == RaffleState.OPEN;
         bool hasBalance = address(this).balance > 0;
-        bool hasPlayers = s_playersLength > 0;
+        bool hasPlayers = s_players.length > 0;
         upkeepNeeded = isOpen && timeHasPassed && hasBalance && hasPlayers;
 
         return (upkeepNeeded, "0x0");
@@ -144,7 +143,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         // Check if enough time has passed, the lottery is open, has balance, and has players
         (bool upkeepNeeded,) = this.checkUpKeep("");
         if (!upkeepNeeded) {
-            revert Raffle__UpKeepIsFalse(address(this).balance, s_playersLength, uint256(s_raffleState));
+            revert Raffle__UpKeepIsFalse(address(this).balance, s_players.length, uint256(s_raffleState));
         }
 
         //Get our Random Number v2.5
@@ -174,7 +173,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         internal
         override
     {
-        uint256 indexOfWinner = randomWords[0] % s_playersLength;
+        uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable recentWinner = s_players[indexOfWinner];
         s_recentWinner = recentWinner;
 
@@ -194,10 +193,6 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     function getEntranceFee() public view returns (uint256) {
         return i_entranceFee;
-    }
-
-    function getPlayersLength() public view returns (uint256) {
-        return s_playersLength;
     }
 
     function getPlayer(uint256 index) public view returns (address) {

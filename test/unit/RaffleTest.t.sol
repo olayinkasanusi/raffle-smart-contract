@@ -78,17 +78,18 @@ contract RaffleTest is Test {
     }
 
     function testDontAllowPlayersToEnterWhileRaffleIsCalculating() public {
-        // Arrange
+        // 1. Arrange - Players enter and time passes
         vm.prank(PLAYER);
         raffle.enterRaffle{ value: entranceFee }();
-
-        // Simulate time passing and upkeep being performed to change state to CALCULATING
         vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
-        raffle.checkUpKeep("");
 
-        // Act / Assert
+        // 2. Act - Transition state to CALCULATING
+        raffle.performUpkeep(""); // This changes state to RaffleState.CALCULATING
+
+        // 3. Assert - Now try to enter while it is calculating
         vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selector);
+        vm.prank(PLAYER);
         raffle.enterRaffle{ value: entranceFee }();
     }
 }

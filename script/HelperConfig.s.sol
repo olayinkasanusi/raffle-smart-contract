@@ -2,12 +2,13 @@
 pragma solidity ^0.8.19;
 
 import { Script } from "forge-std/Script.sol";
-import { VRFCoordinatorV2Mock } from "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol";
+import { VRFCoordinatorV2_5Mock } from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 import { LinkToken } from "../test/mocks/LinkToken.sol";
 
 abstract contract CodeConstants {
     uint96 public constant MOCK_BASE_FEE = 0.25 ether;
     uint96 public constant MOCK_GAS_PRICE_LINK = 1e9;
+    int256 public constant WEI_PER_UNIT_LINK = 4e15;
 
     uint256 public constant SEPOLIA_CHAIN_ID = 11155111;
     uint256 public constant LOCALHOST_CHAIN_ID = 31337;
@@ -67,7 +68,9 @@ contract HelperConfig is Script, CodeConstants {
         }
 
         vm.startBroadcast();
-        VRFCoordinatorV2Mock vrfCoordinatorV2Mock = new VRFCoordinatorV2Mock(MOCK_BASE_FEE, MOCK_GAS_PRICE_LINK);
+        VRFCoordinatorV2_5Mock vrfCoordinatorV2Mock =
+            new VRFCoordinatorV2_5Mock(MOCK_BASE_FEE, MOCK_GAS_PRICE_LINK, WEI_PER_UNIT_LINK);
+
         LinkToken linkToken = new LinkToken();
         vm.stopBroadcast();
 
