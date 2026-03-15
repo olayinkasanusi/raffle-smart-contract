@@ -27,8 +27,8 @@ pragma solidity ^0.8.19;
 /**
  * IMPORTS
  */
-import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
-import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
+import { VRFConsumerBaseV2Plus } from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import { VRFV2PlusClient } from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 import {
     AutomationCompatibleInterface
 } from "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
@@ -159,7 +159,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
             numWords: NUM_WORDS,
             extraArgs: VRFV2PlusClient._argsToBytes(
                 // Set nativePayment to true to pay for VRF requests with Sepolia ETH instead of LINK
-                VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
+                VRFV2PlusClient.ExtraArgsV1({ nativePayment: false })
             )
         });
 
@@ -184,7 +184,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         s_raffleState = RaffleState.OPEN;
         emit WinnerPicked(s_recentWinner);
 
-        (bool success,) = recentWinner.call{value: address(this).balance}("");
+        (bool success,) = recentWinner.call{ value: address(this).balance }("");
         if (!success) revert Raffle__TransferFailed();
     }
 

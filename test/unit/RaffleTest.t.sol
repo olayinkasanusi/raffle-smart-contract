@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: SEE LICENSE IN LICENSE
 pragma solidity ^0.8.19;
 
-import {Raffle} from "../../src/Raffle.sol";
-import {Test, console} from "forge-std/Test.sol";
-import {DeployRaffle} from "../../script/DeployRaffle.s.sol";
-import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import { Raffle } from "../../src/Raffle.sol";
+import { Test, console } from "forge-std/Test.sol";
+import { DeployRaffle } from "../../script/DeployRaffle.s.sol";
+import { HelperConfig } from "../../script/HelperConfig.s.sol";
 
 contract RaffleTest is Test {
     Raffle public raffle;
@@ -60,7 +60,7 @@ contract RaffleTest is Test {
         vm.prank(PLAYER);
 
         // Act
-        raffle.enterRaffle{value: entranceFee}();
+        raffle.enterRaffle{ value: entranceFee }();
 
         // Assert
         address playerRecorded = raffle.getPlayer(0);
@@ -74,13 +74,13 @@ contract RaffleTest is Test {
         // Act / Assert
         vm.expectEmit(true, false, false, false, address(raffle));
         emit RaffleEntered(PLAYER);
-        raffle.enterRaffle{value: entranceFee}();
+        raffle.enterRaffle{ value: entranceFee }();
     }
 
     function testDontAllowPlayersToEnterWhileRaffleIsCalculating() public {
         // Arrange
         vm.prank(PLAYER);
-        raffle.enterRaffle{value: entranceFee}();
+        raffle.enterRaffle{ value: entranceFee }();
 
         // Simulate time passing and upkeep being performed to change state to CALCULATING
         vm.warp(block.timestamp + interval + 1);
@@ -89,6 +89,6 @@ contract RaffleTest is Test {
 
         // Act / Assert
         vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selector);
-        raffle.enterRaffle{value: entranceFee}();
+        raffle.enterRaffle{ value: entranceFee }();
     }
 }
