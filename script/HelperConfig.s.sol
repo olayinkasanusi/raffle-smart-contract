@@ -34,6 +34,11 @@ contract HelperConfig is Script, CodeConstants {
         networkConfigs[SEPOLIA_CHAIN_ID] = getSepoliaEthConfig();
     }
 
+    function setConfig(uint256 subId, address vrfCoordinator) public {
+        localNetworkConfig.subscriptionId = subId;
+        localNetworkConfig.vrfCoordinator = vrfCoordinator;
+    }
+
     function getConfigByChainId(uint256 chainId) public returns (NetworkConfig memory) {
         if (networkConfigs[chainId].vrfCoordinator != address(0)) {
             return networkConfigs[chainId];

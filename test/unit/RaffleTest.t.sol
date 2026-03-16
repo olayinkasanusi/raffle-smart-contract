@@ -92,4 +92,85 @@ contract RaffleTest is Test {
         vm.prank(PLAYER);
         raffle.enterRaffle{ value: entranceFee }();
     }
+
+    function testCheckUpkeepIfThereIsNoBalance() public {
+        // Arrange
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        // Act
+        (bool upkeepNeeded,) = raffle.checkUpKeep("");
+
+        // Assert
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpKeepReturnsFalseIfRaffleIsNotOpen() public {
+        // Arrange
+        vm.prank(PLAYER);
+        raffle.enterRaffle{ value: entranceFee }();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        raffle.performUpkeep("");
+
+        // Act
+        (bool upkeepNeeded,) = raffle.checkUpKeep("");
+
+        // Assert
+        assert(!upkeepNeeded);
+    }
+
+    function testCheckUpKeepReturnsFalseIfEnoughTimeHasNotPassed() public {
+        // Arrange
+        vm.prank(PLAYER);
+        raffle.enterRaffle{ value: entranceFee }();
+
+        // Act
+        (bool upkeepNeeded,) = raffle.checkUpKeep("");
+
+        // Assert
+        assert(!upkeepNeeded);
+    }
+
+    function testConstructorSetsVariablesCorrectly() public {
+        // Arrange
+        HelperConfig.NetworkConfig memory config = helperConfig.getConfig();
+
+        // Assert
+        assert(raffle.getEntranceFee() == config.entranceFee);
+        assert(raffle.getInterval() == config.interval);
+        assert(raffle.getVrfCoordinator() == config.vrfCoordinator);
+        assert(raffle.getGasLane() == config.gasLane);
+        assert(raffle.getCallbackGasLimit() == config.callbackGasLimit);
+        assert(raffle.getSubscriptionId() == config.subscriptionId);
+    }
+
+    function testPerformUpkeepOnlyRunsIfCheckUpkeepIsTrue() public {
+        // Arrange
+        vm.prank(PLAYER);
+        raffle.enterRaffle{ value: entranceFee }();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+
+        // Act / Assert
+        raffle.performUpkeep("");
+    }
+
+    function testPerformUpkeepRevertsIfCheckUpkeepIsFalse() public {
+        // Arrange
+        uint256 currentBalance = 0;
+        uint256 currentPlayers = 0;
+        uint256 currentState = uint256(Raffle.RaffleState.OPEN);
+
+        vm.prank(PLAYER);
+        raffle.enterRaffle{ value: entranceFee }();
+        currentBalance += entranceFee;
+        currentPlayers += 1;
+
+        // Act / Assert
+        vm.expectRevert(
+            abi.encodeWithSelector(Raffle.Raffle__UpKeepIsFalse.selector, currentBalance, currentPlayers, currentState)
+        );
+        raffle.performUpkeep("");
+    }
 }

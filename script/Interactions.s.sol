@@ -89,3 +89,4 @@ contract AddConsumer is Script {
         addConsumerUsingConfig(contractToAddtoVrf);
     }
 }
+

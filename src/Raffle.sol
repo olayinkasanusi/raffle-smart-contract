@@ -202,4 +202,24 @@ contract Raffle is VRFConsumerBaseV2Plus {
     function getRaffleState() public view returns (RaffleState) {
         return s_raffleState;
     }
+
+    function getInterval() public view returns (uint256) {
+        return i_interval;
+    }
+
+    function getVrfCoordinator() public view returns (address) {
+        return address(s_vrfCoordinator);
+    }
+
+    function getGasLane() public view returns (bytes32) {
+        return i_keyHash;
+    }
+
+    function getSubscriptionId() public view returns (uint256) {
+        return i_subscriptionId;
+    }
+
+    function getCallbackGasLimit() public view returns (uint32) {
+        return i_callbackGasLimit;
+    }
 }
