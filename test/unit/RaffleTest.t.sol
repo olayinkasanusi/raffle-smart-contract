@@ -5,6 +5,8 @@ import { Raffle } from "../../src/Raffle.sol";
 import { Test, console } from "forge-std/Test.sol";
 import { DeployRaffle } from "../../script/DeployRaffle.s.sol";
 import { HelperConfig } from "../../script/HelperConfig.s.sol";
+import { Vm } from "forge-std/Vm.sol";
+import { VRFCoordinatorV2_5Mock } from "@chainlink/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 
 contract RaffleTest is Test {
     Raffle public raffle;
@@ -38,6 +40,14 @@ contract RaffleTest is Test {
         callbackGasLimit = config.callbackGasLimit;
 
         vm.deal(PLAYER, STARTING_USER_BALANCE);
+    }
+
+    modifier raffleEntered() {
+        vm.prank(PLAYER);
+        raffle.enterRaffle{ value: entranceFee }();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        _;
     }
 
     function testRaffleInitializesInOpenState() public view {
@@ -77,13 +87,7 @@ contract RaffleTest is Test {
         raffle.enterRaffle{ value: entranceFee }();
     }
 
-    function testDontAllowPlayersToEnterWhileRaffleIsCalculating() public {
-        // 1. Arrange - Players enter and time passes
-        vm.prank(PLAYER);
-        raffle.enterRaffle{ value: entranceFee }();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
-
+    function testDontAllowPlayersToEnterWhileRaffleIsCalculating() public raffleEntered {
         // 2. Act - Transition state to CALCULATING
         raffle.performUpkeep(""); // This changes state to RaffleState.CALCULATING
 
@@ -105,12 +109,9 @@ contract RaffleTest is Test {
         assert(!upkeepNeeded);
     }
 
-    function testCheckUpKeepReturnsFalseIfRaffleIsNotOpen() public {
+    function testCheckUpKeepReturnsFalseIfRaffleIsNotOpen() public raffleEntered {
         // Arrange
-        vm.prank(PLAYER);
-        raffle.enterRaffle{ value: entranceFee }();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
+
         raffle.performUpkeep("");
 
         // Act
@@ -145,12 +146,8 @@ contract RaffleTest is Test {
         assert(raffle.getSubscriptionId() == config.subscriptionId);
     }
 
-    function testPerformUpkeepOnlyRunsIfCheckUpkeepIsTrue() public {
+    function testPerformUpkeepOnlyRunsIfCheckUpkeepIsTrue() public raffleEntered {
         // Arrange
-        vm.prank(PLAYER);
-        raffle.enterRaffle{ value: entranceFee }();
-        vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number + 1);
 
         // Act / Assert
         raffle.performUpkeep("");
@@ -172,5 +169,59 @@ contract RaffleTest is Test {
             abi.encodeWithSelector(Raffle.Raffle__UpKeepIsFalse.selector, currentBalance, currentPlayers, currentState)
         );
         raffle.performUpkeep("");
+    }
+
+    function testPerformUpkeepUpdatesRaffleStateAndEmitsRequestId() public raffleEntered {
+        // Act
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+
+        // Assert
+        assert(raffle.getRaffleState() == Raffle.RaffleState.CALCULATING);
+        assert(requestId != bytes32(0));
+    }
+
+    function testFulfillrandomWordsCanOnlyBeCalledAfterPerformUpKeep(uint256 randomRequestId) public raffleEntered {
+        // Arrange
+
+        // Act / Assert
+        vm.expectRevert(VRFCoordinatorV2_5Mock.InvalidRequest.selector);
+        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(randomRequestId, address(raffle));
+    }
+
+    function testFulfillRandomWordsPicksAWinnerResetsTheLotteryAndSendsMoney() public raffleEntered {
+        // Arrange
+        uint256 additionalEntrants = 10;
+        uint256 startingIndex = 10; // We already have 1 entrant from the raffleEntered modifier
+
+        for (uint256 i = startingIndex; i < startingIndex + additionalEntrants; i++) {
+            address newPlayer = makeAddr(string(abi.encodePacked("player", uint256(i))));
+            hoax(newPlayer, STARTING_USER_BALANCE);
+            raffle.enterRaffle{ value: entranceFee }();
+        }
+
+        uint256 startingTimeStamp = raffle.getLastTimeStamp();
+
+        //
+        vm.recordLogs();
+        raffle.performUpkeep("");
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 requestId = entries[1].topics[1];
+
+        VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(uint256(requestId), address(raffle));
+
+        // Assert
+        uint256 endingTimeStamp = raffle.getLastTimeStamp();
+        uint256 totalPrize = entranceFee * (additionalEntrants + 1);
+        address recentWinner = raffle.getRecentWinner();
+
+        //
+        assert(raffle.getRaffleState() == Raffle.RaffleState.OPEN);
+        assert(recentWinner != address(0));
+        assert(raffle.getNumberOfPlayers() == 0);
+        assert(recentWinner.balance == (STARTING_USER_BALANCE + totalPrize - entranceFee));
+        assert(endingTimeStamp > startingTimeStamp);
     }
 }

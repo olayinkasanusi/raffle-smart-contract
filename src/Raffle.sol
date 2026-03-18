@@ -76,6 +76,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
      */
     event RaffleEntered(address indexed player);
     event WinnerPicked(address indexed winner);
+    event RequestedRaffleWinner(uint256 indexed requestId);
 
     constructor(
         uint256 entranceFee,
@@ -162,7 +163,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
             )
         });
 
-        s_vrfCoordinator.requestRandomWords(request);
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(request);
+
+        emit RequestedRaffleWinner(requestId);
     }
 
     function fulfillRandomWords(
@@ -199,6 +202,10 @@ contract Raffle is VRFConsumerBaseV2Plus {
         return s_players[index];
     }
 
+    function getNumberOfPlayers() public view returns (uint256) {
+        return s_players.length;
+    }
+
     function getRaffleState() public view returns (RaffleState) {
         return s_raffleState;
     }
@@ -221,5 +228,13 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     function getCallbackGasLimit() public view returns (uint32) {
         return i_callbackGasLimit;
+    }
+
+    function getLastTimeStamp() public view returns (uint256) {
+        return s_lastTimeStamp;
+    }
+
+    function getRecentWinner() public view returns (address) {
+        return s_recentWinner;
     }
 }
