@@ -237,4 +237,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
     function getRecentWinner() public view returns (address) {
         return s_recentWinner;
     }
+
+    // Only for development/debugging!
+    function resetState() external onlyOwner {
+        s_raffleState = RaffleState.OPEN;
+    }
 }

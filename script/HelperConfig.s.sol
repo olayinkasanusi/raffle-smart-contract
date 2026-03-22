@@ -10,7 +10,7 @@ abstract contract CodeConstants {
     uint96 public constant MOCK_GAS_PRICE_LINK = 1e9;
     int256 public constant WEI_PER_UNIT_LINK = 4e15;
 
-    uint256 public constant SEPOLIA_CHAIN_ID = 11155111;
+    uint256 public constant SEPOLIA_CHAIN_ID = 84532;
     uint256 public constant LOCALHOST_CHAIN_ID = 31337;
 }
 
@@ -58,11 +58,11 @@ contract HelperConfig is Script, CodeConstants {
         return NetworkConfig({
             entranceFee: 0.01 ether,
             interval: 30,
-            vrfCoordinator: 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B,
-            gasLane: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
-            subscriptionId: 61956263202970559175156193959013976855273055100864630876083833796580051368362,
-            callbackGasLimit: 500000,
-            link: 0x779877A7B0D9E8603169DdbD7836e478b4624789
+            vrfCoordinator: 0x5C210eF41CD1a72de73bF76eC39637bB0d3d7BEE,
+            gasLane: 0x9e1344a1247c8a1785d0a4681a27152bffdb43666ae5bf7d14d24a5efd44bf71,
+            subscriptionId: 99552600335547547902838117467562836349094978527619441831876280185668558786248,
+            callbackGasLimit: 80000,
+            link: 0xE4aB69C077896252FAFBD49EFD26B5D171A32410
         });
     }
 
@@ -85,7 +85,7 @@ contract HelperConfig is Script, CodeConstants {
             vrfCoordinator: address(vrfCoordinatorV2Mock),
             gasLane: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
             subscriptionId: 0,
-            callbackGasLimit: 500000,
+            callbackGasLimit: 100000,
             link: address(linkToken)
         });
 
